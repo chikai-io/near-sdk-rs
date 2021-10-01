@@ -1,4 +1,7 @@
-use crate::{BindgenArgType, ImplItemMethodInfo, InputStructType, MethodType, SerializerType};
+use crate::info_extractor::{
+    arg_info::BindgenArgType, impl_item_method_info::ImplItemMethodInfo, InputStructType,
+    MethodType, SerializerType,
+};
 
 use quote::quote;
 use syn::export::TokenStream2;

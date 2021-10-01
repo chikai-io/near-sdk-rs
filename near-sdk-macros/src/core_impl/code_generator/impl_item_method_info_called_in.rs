@@ -1,6 +1,6 @@
 use crate::core_impl::info_extractor::{
-    attr_sig_info::AttrSigInfo, impl_item_method_info::ImplItemMethodInfo, InputStructType,
-    MethodType, SerializerType,
+    attr_sig_info_called_in::AttrSigInfo, impl_item_method_info_called_in::ImplItemMethodInfo,
+    InputStructType, MethodType, SerializerType,
 };
 use quote::quote;
 use syn::export::TokenStream2;
@@ -173,7 +173,7 @@ impl ImplItemMethodInfo {
         let serialize_args = if has_input_args {
             match &attr_signature_info.input_serializer {
                 SerializerType::Borsh => {
-                    crate::info_extractor::trait_item_method_info::TraitItemMethodInfo::generate_serialier(
+                    crate::info_extractor::trait_item_method_info_called_in::TraitItemMethodInfo::generate_serialier(
                         attr_signature_info,
                         &attr_signature_info.input_serializer,
                     )

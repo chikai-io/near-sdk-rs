@@ -1,4 +1,4 @@
-use super::AttrSigInfo;
+use super::attr_sig_info::AttrSigInfo;
 use syn::export::Span;
 use syn::spanned::Spanned;
 use syn::{Error, LitStr, TraitItemMethod};

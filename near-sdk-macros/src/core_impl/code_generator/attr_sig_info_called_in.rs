@@ -1,8 +1,8 @@
 use syn::export::TokenStream2;
 
 use crate::core_impl::info_extractor::{
-    arg_info::{ArgInfo, BindgenArgType},
-    attr_sig_info::AttrSigInfo,
+    arg_info_called_in::{ArgInfo, BindgenArgType},
+    attr_sig_info_called_in::AttrSigInfo,
     InputStructType, SerializerType,
 };
 use quote::quote;

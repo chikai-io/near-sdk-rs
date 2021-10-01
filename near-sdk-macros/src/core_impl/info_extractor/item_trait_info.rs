@@ -1,4 +1,4 @@
-use super::TraitItemMethodInfo;
+use super::trait_item_method_info::TraitItemMethodInfo;
 use inflector::Inflector;
 use syn::export::Span;
 use syn::spanned::Spanned;

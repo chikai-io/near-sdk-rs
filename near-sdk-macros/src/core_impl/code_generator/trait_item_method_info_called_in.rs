@@ -1,7 +1,7 @@
 use crate::core_impl::{
-    info_extractor::attr_sig_info::AttrSigInfo,
+    info_extractor::attr_sig_info_called_in::AttrSigInfo,
     info_extractor::{
-        trait_item_method_info::TraitItemMethodInfo, InputStructType, SerializerType,
+        trait_item_method_info_called_in::TraitItemMethodInfo, InputStructType, SerializerType,
     },
 };
 use quote::quote;

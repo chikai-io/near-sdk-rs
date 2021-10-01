@@ -14,13 +14,13 @@ use syn::{File, ItemEnum, ItemImpl, ItemStruct, ItemTrait};
 #[proc_macro_attribute]
 pub fn near_bindgen(_attr: TokenStream, item: TokenStream) -> TokenStream {
     if let Ok(input) = syn::parse::<ItemStruct>(item.clone()) {
-        let struct_proxy = generate_proxy_struct(&input);
+        let struct_proxy = code_generator::item_struct_info::generate_proxy_struct(&input);
         TokenStream::from(quote! {
             #input
             #struct_proxy
         })
     } else if let Ok(mut input) = syn::parse::<ItemImpl>(item) {
-        let item_impl_info = match ItemImplInfo::new(&mut input) {
+        let item_impl_info = match info_extractor::item_impl_info::ItemImplInfo::new(&mut input) {
             Ok(x) => x,
             Err(err) => {
                 return err.to_compile_error().into();
@@ -64,14 +64,81 @@ pub fn ext_contract(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         };
-        let item_trait_info = match ItemTraitInfo::new(&mut input, mod_name) {
+        let item_trait_info =
+            match info_extractor::item_trait_info::ItemTraitInfo::new(&mut input, mod_name) {
+                Ok(x) => x,
+                Err(err) => return TokenStream::from(err.to_compile_error()),
+            };
+        item_trait_info.wrapped_module().into()
+    } else {
+        TokenStream::from(
+            syn::Error::new(Span::call_site(), "ext_contract can only be used on traits")
+                .to_compile_error(),
+        )
+    }
+}
+
+#[proc_macro_attribute]
+pub fn called_in(attr: TokenStream, item: TokenStream) -> TokenStream {
+    if let Ok(mut input) = syn::parse::<ItemTrait>(item) {
+        let mod_name: Option<proc_macro2::Ident> = if attr.is_empty() {
+            None
+        } else {
+            match syn::parse(attr) {
+                Ok(x) => x,
+                Err(err) => {
+                    return TokenStream::from(
+                        syn::Error::new(
+                            Span::call_site(),
+                            format!("Failed to parse mod name for called_in: {}", err),
+                        )
+                        .to_compile_error(),
+                    )
+                }
+            }
+        };
+        let item_trait_info = match info_extractor::item_trait_info_called_in::ItemTraitInfo::new(
+            &mut input, mod_name,
+        ) {
             Ok(x) => x,
             Err(err) => return TokenStream::from(err.to_compile_error()),
         };
         item_trait_info.wrapped_module().into()
     } else {
         TokenStream::from(
-            syn::Error::new(Span::call_site(), "ext_contract can only be used on traits")
+            syn::Error::new(Span::call_site(), "called_in can only be used on traits")
+                .to_compile_error(),
+        )
+    }
+}
+
+#[proc_macro_attribute]
+pub fn call_out(attr: TokenStream, item: TokenStream) -> TokenStream {
+    if let Ok(mut input) = syn::parse::<ItemTrait>(item) {
+        let mod_name: Option<proc_macro2::Ident> = if attr.is_empty() {
+            None
+        } else {
+            match syn::parse(attr) {
+                Ok(x) => x,
+                Err(err) => {
+                    return TokenStream::from(
+                        syn::Error::new(
+                            Span::call_site(),
+                            format!("Failed to parse mod name for call_out: {}", err),
+                        )
+                        .to_compile_error(),
+                    )
+                }
+            }
+        };
+        let item_trait_info = match info_extractor::item_trait_info::ItemTraitInfo::new(&mut input, mod_name) {
+            Ok(x) => x,
+            Err(err) => return TokenStream::from(err.to_compile_error()),
+        };
+        item_trait_info.wrapped_module().into()
+    } else {
+        TokenStream::from(
+            syn::Error::new(Span::call_site(), "call_out can only be used on traits")
                 .to_compile_error(),
         )
     }

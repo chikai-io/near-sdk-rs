@@ -1,4 +1,4 @@
-use crate::core_impl::info_extractor::item_trait_info_called_in::ItemTraitInfo;
+use crate::core_impl::info_extractor::item_trait_info::ItemTraitInfo;
 use quote::quote;
 use syn::export::TokenStream2;
 
@@ -9,7 +9,7 @@ impl ItemTraitInfo {
         for method in &self.methods {
             result.extend(method.method_wrapper());
         }
-        let mod_name = &self.trait_name;
+        let mod_name = &self.mod_name;
         quote! {
            pub mod #mod_name {
                 use super::*;

@@ -1,4 +1,4 @@
-use crate::info_extractor::item_impl_info::ItemImplInfo;
+use crate::info_extractor::item_impl_info_called_in::ItemImplInfo;
 use syn::export::TokenStream2;
 use syn::Ident;
 

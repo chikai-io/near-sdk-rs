@@ -1,7 +1,7 @@
 use super::{
-    arg_info::{ArgInfo, BindgenArgType},
-    init_attr::InitAttr,
-    serializer_attr::SerializerAttr,
+    arg_info_called_in::{ArgInfo, BindgenArgType},
+    init_attr_called_in::InitAttr,
+    serializer_attr_called_in::SerializerAttr,
     MethodType, SerializerType,
 };
 use quote::ToTokens;
@@ -41,12 +41,12 @@ impl AttrSigInfo {
         original_attrs: &mut Vec<Attribute>,
         original_sig: &mut Signature,
     ) -> syn::Result<Self> {
-        if original_sig.asyncness.is_some() {
-            return Err(Error::new(
-                original_sig.span(),
-                "Contract API is not allowed to be async.",
-            ));
-        }
+        // if original_sig.asyncness.is_some() {
+        //     return Err(Error::new(
+        //         original_sig.span(),
+        //         "Contract API is not allowed to be async.",
+        //     ));
+        // }
         if original_sig.abi.is_some() {
             return Err(Error::new(
                 original_sig.span(),

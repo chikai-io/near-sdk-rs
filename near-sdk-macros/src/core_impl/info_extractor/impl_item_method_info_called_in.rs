@@ -1,4 +1,4 @@
-use super::attr_sig_info::AttrSigInfo;
+use super::attr_sig_info_called_in::AttrSigInfo;
 use syn::{ImplItemMethod, Type, Visibility};
 
 /// Information extracted from `ImplItemMethod`.

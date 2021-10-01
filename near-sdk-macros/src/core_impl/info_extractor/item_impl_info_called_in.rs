@@ -1,4 +1,4 @@
-use super::impl_item_method_info::ImplItemMethodInfo;
+use super::impl_item_method_info_called_in::ImplItemMethodInfo;
 use syn::spanned::Spanned;
 use syn::{Error, ImplItem, ItemImpl, Type};
 

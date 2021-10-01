@@ -2,7 +2,7 @@
 //! it decorates. Note, that this in an inner attribute. For it to work we should be
 //! able to visit every method in the module intended to be a contract method.
 //! For this we implement the visitor.
-use crate::ItemImplInfo;
+use crate::info_extractor::item_impl_info::ItemImplInfo;
 
 use quote::quote;
 use syn::export::{ToTokens, TokenStream2};
