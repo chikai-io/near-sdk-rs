@@ -2,8 +2,8 @@
 extern crate quickcheck;
 
 pub use near_sdk_macros::{
-    callback, callback_vec, ext_contract, init, metadata, near_bindgen, result_serializer,
-    serializer, BorshStorageKey, PanicOnDefault,
+    callback, callback_vec, called_in, ext_contract, init, metadata, near_bindgen,
+    result_serializer, serializer, BorshStorageKey, PanicOnDefault,
 };
 
 #[cfg(feature = "unstable")]

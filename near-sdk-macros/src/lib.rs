@@ -131,10 +131,11 @@ pub fn call_out(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         };
-        let item_trait_info = match info_extractor::item_trait_info::ItemTraitInfo::new(&mut input, mod_name) {
-            Ok(x) => x,
-            Err(err) => return TokenStream::from(err.to_compile_error()),
-        };
+        let item_trait_info =
+            match info_extractor::item_trait_info::ItemTraitInfo::new(&mut input, mod_name) {
+                Ok(x) => x,
+                Err(err) => return TokenStream::from(err.to_compile_error()),
+            };
         item_trait_info.wrapped_module().into()
     } else {
         TokenStream::from(
@@ -250,4 +251,15 @@ pub fn borsh_storage_key(item: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         impl near_sdk::BorshIntoStorageKey for #name {}
     })
+}
+
+fn crate_name(name: &str) -> Result<syn::Ident, syn::Error> {
+    use proc_macro_crate::FoundCrate;
+    let name = match proc_macro_crate::crate_name(name)
+        .map_err(|e| syn::Error::new(Span::call_site(), e))?
+    {
+        FoundCrate::Itself => syn::Ident::new("crate", Span::call_site()),
+        FoundCrate::Name(name) => syn::Ident::new(&name, Span::call_site()),
+    };
+    Ok(name)
 }

@@ -6,14 +6,16 @@ impl ItemTraitInfo {
     /// Generate code that wrapps external calls.
     pub fn wrapped_module(&self) -> TokenStream2 {
         let mut result = TokenStream2::new();
-        for method in &self.methods {
-            result.extend(method.method_wrapper());
+        for (ident, method) in &self.method_items {
+            result.extend(method.method_wrapper(&self));
         }
-        let mod_name = &self.trait_name;
+        let trait_mod_name = &self.ident;
+        let trait_docs = &self.docs;
         quote! {
-           pub mod #mod_name {
-                use super::*;
-                use near_sdk::{Gas, Balance, AccountId, Promise};
+            #(#[doc = #trait_docs])*
+            pub mod #trait_mod_name {
+                // use super::*;
+                // use near_sdk::{Gas, Balance, AccountId, Promise};
                 #result
             }
         }

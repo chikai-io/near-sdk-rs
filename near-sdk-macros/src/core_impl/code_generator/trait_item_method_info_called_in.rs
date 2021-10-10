@@ -1,15 +1,119 @@
 use crate::core_impl::{
     info_extractor::attr_sig_info_called_in::AttrSigInfo,
     info_extractor::{
+        item_trait_info_called_in::ItemTraitInfo,
         trait_item_method_info_called_in::TraitItemMethodInfo, InputStructType, SerializerType,
     },
 };
 use quote::quote;
-use syn::export::TokenStream2;
+use syn::{export::TokenStream2, Error};
 
 impl TraitItemMethodInfo {
     /// Generate code that wraps the method.
-    pub fn method_wrapper(&self) -> TokenStream2 {
+    pub fn method_wrapper(&self, trait_info: &ItemTraitInfo) -> Result<TokenStream2, Error> {
+        use quote::format_ident;
+        let method_mod_name = &self.original.sig.ident;
+        let method_docs = &self.docs;
+
+        //
+
+        let args_trait_lifetime_idents = self
+            .args_sets
+            .trait_generic_lifetimes
+            .iter()
+            .map(|i| format_ident!("'{}", i))
+            .collect::<Vec<_>>();
+        let args_trait_lifetimes = self
+            .args_sets
+            .trait_generic_lifetimes
+            .iter()
+            .map(|l| trait_info.generic_lifetimes.get(l).unwrap())
+            .collect::<Vec<_>>();
+
+        let args_method_lifetime_idents = self
+            .args_sets
+            .method_generic_lifetimes
+            .iter()
+            .map(|i| format_ident!("'{}", i))
+            .collect::<Vec<_>>();
+        let args_method_lifetimes = self
+            .args_sets
+            .method_generic_lifetimes
+            .iter()
+            .map(|l| self.generic_lifetimes.get(l).unwrap())
+            .collect::<Vec<_>>();
+
+        //
+
+        let args_trait_generic_type_idents =
+            self.args_sets.trait_generic_types.iter().collect::<Vec<_>>();
+        let args_trait_generic_types = self
+            .args_sets
+            .trait_generic_types
+            .iter()
+            .map(|t| trait_info.generic_types.get(t).unwrap())
+            .collect::<Vec<_>>();
+
+        let args_method_generic_type_idents =
+            self.args_sets.method_generic_types.iter().collect::<Vec<_>>();
+        let args_method_generic_types = self
+            .args_sets
+            .method_generic_types
+            .iter()
+            .map(|t| self.generic_types.get(t).unwrap())
+            .collect::<Vec<_>>();
+
+        //
+
+        let args_trait_generic_const_idents =
+            self.args_sets.trait_generic_consts.iter().collect::<Vec<_>>();
+        let args_trait_generic_consts = self
+            .args_sets
+            .trait_generic_consts
+            .iter()
+            .map(|c| trait_info.generic_consts.get(c).unwrap())
+            .collect::<Vec<_>>();
+
+        //
+
+        let args_method_generic_const_idents =
+            self.args_sets.method_generic_consts.iter().collect::<Vec<_>>();
+        let args_method_generic_consts = self
+            .args_sets
+            .method_generic_consts
+            .iter()
+            .map(|c| self.generic_consts.get(c).unwrap())
+            .collect::<Vec<_>>();
+
+        let args = self.args.values().collect::<Vec<_>>();
+
+        let trait_where_clauses = trait_info
+            .original
+            .generics
+            .where_clause
+            .iter()
+            .flat_map(|w| w.predicates.iter())
+            .collect::<Vec<_>>();
+        let method_where_clauses = self
+            .original
+            .sig
+            .generics
+            .where_clause
+            .iter()
+            .flat_map(|w| w.predicates.iter())
+            .collect::<Vec<_>>();
+
+        let where_clause = if !trait_where_clauses.is_empty() || !method_where_clauses.is_empty() {
+            quote! {
+                where
+                    #(#trait_where_clauses,)*
+                    #(#method_where_clauses,)*
+            }
+        } else {
+            quote! {}
+        };
+
+        /*
         let ident = &self.attr_sig_info.ident;
         let ident_byte_str = &self.ident_byte_str;
         let pat_type_list = self.attr_sig_info.pat_type_list();
@@ -29,6 +133,89 @@ impl TraitItemMethodInfo {
                 )
             }
         }
+        */
+
+        let near_sdk = crate::crate_name("near-sdk")?;
+
+        let args_generics_with_bounds = quote! {
+            #(#args_trait_lifetimes,)*
+            #(#args_method_lifetimes,)*
+            #(#args_trait_generic_types,)*
+            #(#args_method_generic_types,)*
+            #(#args_trait_generic_consts,)*
+            #(#args_method_generic_consts,)*
+        };
+
+        let args_generics_idents = quote! {
+            #(#args_trait_lifetime_idents,)*
+            #(#args_method_lifetime_idents,)*
+            #(#args_trait_generic_type_idents,)*
+            #(#args_method_generic_type_idents,)*
+            #(#args_trait_generic_const_idents,)*
+            #(#args_method_generic_const_idents,)*
+        };
+
+        Ok(quote! {
+            #[allow(non_camel_case_types)]
+            #(#[doc = #method_docs])*
+            #[doc = "generated code here"]
+            pub mod #method_mod_name {
+                use #near_sdk as _near_sdk;
+
+                #(#[doc = #method_docs])*
+                #[derive(_near_sdk::serde::Deserialize)]
+                #[serde(crate = "_near_sdk::serde")]
+                pub struct
+                Args< //
+                    #args_generics_with_bounds
+                >
+                #where_clause
+                {
+                    #(pub #args,)*
+                    #[serde(skip)]
+                    pub _phantom: StatelessCalledIn< //
+                        #args_generics_idents
+                    >,
+                }
+
+                #(#[doc = #method_docs])*
+                pub type Return<Z> = Z;
+
+                #(#[doc = #method_docs])*
+                pub struct CalledIn< //
+                State,
+                    #args_generics_with_bounds
+                >
+                #where_clause
+                {
+                    _state_param: std::marker::PhantomData<State>,
+                    _other_param: StatelessCalledIn< //
+                        #args_generics_idents
+                    >,
+                }
+
+
+                #[derive(Default)]
+                pub struct StatelessCalledIn< //
+                    #args_generics_with_bounds
+                >
+                #where_clause
+                {
+                    _trait_lifetimes: ( //
+                        #(std::marker::PhantomData<&#args_trait_lifetime_idents ()>,)*
+                    ),
+                    _method_lifetimes: ( //
+                        #(std::marker::PhantomData<&#args_method_lifetime_idents ()>,)*
+                    ),
+                    _trait_types: ( //
+                        #(std::marker::PhantomData<#args_trait_generic_types>,)*
+                    ),
+                    _method_types: ( //
+                        #(std::marker::PhantomData<#args_method_generic_types>,)*
+                    ),
+                }
+            }
+        })
     }
 
     pub fn generate_serialier(

@@ -101,7 +101,7 @@ impl ItemTraitInfo {
             .cloned()
             .collect();
 
-        let lifetime_bounds = if let Some(wc) = original.generics.where_clause {
+        let lifetime_bounds = if let Some(ref wc) = original.generics.where_clause {
             wc.predicates
                 .iter()
                 .filter_map(|wp| {
@@ -117,7 +117,7 @@ impl ItemTraitInfo {
             indexmap::IndexMap::new()
         };
         let type_bounds =
-            if let Some(wc) = original.generics.where_clause {
+            if let Some(ref wc) = original.generics.where_clause {
                 wc.predicates
                     .iter()
                     .filter_map(|wp| {
@@ -127,7 +127,7 @@ impl ItemTraitInfo {
                             None
                         }
                     })
-                    .map(|pt| (pt.bounded_ty, pt.clone()))
+                    .map(|pt| (pt.bounded_ty.clone(), pt.clone()))
                     .collect()
             } else {
                 indexmap::IndexMap::new()
