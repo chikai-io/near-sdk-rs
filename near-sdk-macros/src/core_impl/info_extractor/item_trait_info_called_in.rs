@@ -20,7 +20,7 @@ pub struct ItemTraitInfo {
 
     /// The trait lifetimes generics.  
     /// eg. `trait Trait<'a>`.
-    pub generic_lifetimes: indexmap::IndexMap<syn::Ident, syn::LifetimeDef>,
+    pub generic_lifetimes: indexmap::IndexMap<syn::Lifetime, syn::LifetimeDef>,
     /// The trait type generics.  
     /// eg. `trait Trait<T>`.
     pub generic_types: indexmap::IndexMap<syn::Ident, syn::TypeParam>,
@@ -74,11 +74,8 @@ impl ItemTraitInfo {
             }
         }
 
-        let generic_lifetimes = original
-            .generics
-            .lifetimes()
-            .map(|lt| (lt.lifetime.ident.clone(), lt.clone()))
-            .collect();
+        let generic_lifetimes =
+            original.generics.lifetimes().map(|lt| (lt.lifetime.clone(), lt.clone())).collect();
         let generic_types =
             original.generics.type_params().map(|tp| (tp.ident.clone(), tp.clone())).collect();
         let generic_consts =

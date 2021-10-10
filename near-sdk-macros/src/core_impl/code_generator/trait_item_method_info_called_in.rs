@@ -17,73 +17,29 @@ impl TraitItemMethodInfo {
 
         //
 
-        let args_trait_lifetime_idents = self
-            .args_sets
-            .trait_generic_lifetimes
-            .iter()
-            .map(|i| format_ident!("'{}", i))
-            .collect::<Vec<_>>();
-        let args_trait_lifetimes = self
-            .args_sets
-            .trait_generic_lifetimes
-            .iter()
-            .map(|l| trait_info.generic_lifetimes.get(l).unwrap())
-            .collect::<Vec<_>>();
+        let args_trait_lifetime_idents = trait_info.generic_lifetimes.keys().collect::<Vec<_>>();
+        let args_trait_lifetimes = trait_info.generic_lifetimes.values().collect::<Vec<_>>();
 
-        let args_method_lifetime_idents = self
-            .args_sets
-            .method_generic_lifetimes
-            .iter()
-            .map(|i| format_ident!("'{}", i))
-            .collect::<Vec<_>>();
-        let args_method_lifetimes = self
-            .args_sets
-            .method_generic_lifetimes
-            .iter()
-            .map(|l| self.generic_lifetimes.get(l).unwrap())
-            .collect::<Vec<_>>();
+        let args_method_lifetime_idents = self.generic_lifetimes.keys().collect::<Vec<_>>();
+        let args_method_lifetimes = self.generic_lifetimes.values().collect::<Vec<_>>();
 
         //
 
-        let args_trait_generic_type_idents =
-            self.args_sets.trait_generic_types.iter().collect::<Vec<_>>();
-        let args_trait_generic_types = self
-            .args_sets
-            .trait_generic_types
-            .iter()
-            .map(|t| trait_info.generic_types.get(t).unwrap())
-            .collect::<Vec<_>>();
+        let args_trait_generic_type_idents = trait_info.generic_types.keys().collect::<Vec<_>>();
+        let args_trait_generic_types = trait_info.generic_types.values().collect::<Vec<_>>();
 
-        let args_method_generic_type_idents =
-            self.args_sets.method_generic_types.iter().collect::<Vec<_>>();
-        let args_method_generic_types = self
-            .args_sets
-            .method_generic_types
-            .iter()
-            .map(|t| self.generic_types.get(t).unwrap())
-            .collect::<Vec<_>>();
+        let args_method_generic_type_idents = self.generic_types.keys().collect::<Vec<_>>();
+        let args_method_generic_types = self.generic_types.values().collect::<Vec<_>>();
 
         //
 
-        let args_trait_generic_const_idents =
-            self.args_sets.trait_generic_consts.iter().collect::<Vec<_>>();
-        let args_trait_generic_consts = self
-            .args_sets
-            .trait_generic_consts
-            .iter()
-            .map(|c| trait_info.generic_consts.get(c).unwrap())
-            .collect::<Vec<_>>();
+        let args_trait_generic_const_idents = trait_info.generic_consts.keys().collect::<Vec<_>>();
+        let args_trait_generic_consts = trait_info.generic_consts.values().collect::<Vec<_>>();
 
         //
 
-        let args_method_generic_const_idents =
-            self.args_sets.method_generic_consts.iter().collect::<Vec<_>>();
-        let args_method_generic_consts = self
-            .args_sets
-            .method_generic_consts
-            .iter()
-            .map(|c| self.generic_consts.get(c).unwrap())
-            .collect::<Vec<_>>();
+        let args_method_generic_const_idents = self.generic_consts.keys().collect::<Vec<_>>();
+        let args_method_generic_consts = self.generic_consts.values().collect::<Vec<_>>();
 
         let args = self.args.values().collect::<Vec<_>>();
 
@@ -155,7 +111,7 @@ impl TraitItemMethodInfo {
             #(#args_method_generic_const_idents,)*
         };
 
-        Ok(quote! {
+        let q = Ok(quote! {
             #[allow(non_camel_case_types)]
             #(#[doc = #method_docs])*
             #[doc = "generated code here"]
@@ -183,17 +139,21 @@ impl TraitItemMethodInfo {
 
                 #(#[doc = #method_docs])*
                 pub struct CalledIn< //
-                State,
-                    #args_generics_with_bounds
+                    #(#args_trait_lifetimes,)*
+                    #(#args_method_lifetimes,)*
+                    _State,
+                    #(#args_trait_generic_types,)*
+                    #(#args_method_generic_types,)*
+                    #(#args_trait_generic_consts,)*
+                    #(#args_method_generic_consts,)*
                 >
                 #where_clause
                 {
-                    _state_param: std::marker::PhantomData<State>,
-                    _other_param: StatelessCalledIn< //
+                    _state_param: std::marker::PhantomData<_State>,
+                    _stateless_params: StatelessCalledIn< //
                         #args_generics_idents
                     >,
                 }
-
 
                 #[derive(Default)]
                 pub struct StatelessCalledIn< //
@@ -208,14 +168,19 @@ impl TraitItemMethodInfo {
                         #(std::marker::PhantomData<&#args_method_lifetime_idents ()>,)*
                     ),
                     _trait_types: ( //
-                        #(std::marker::PhantomData<#args_trait_generic_types>,)*
+                        #(std::marker::PhantomData<#args_trait_generic_type_idents>,)*
                     ),
                     _method_types: ( //
-                        #(std::marker::PhantomData<#args_method_generic_types>,)*
+                        #(std::marker::PhantomData<#args_method_generic_type_idents>,)*
                     ),
                 }
             }
-        })
+        });
+
+        // debugging
+        // panic!("{}", q.unwrap());
+
+        q
     }
 
     pub fn generate_serialier(

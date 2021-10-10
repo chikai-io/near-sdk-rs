@@ -16,7 +16,7 @@ pub struct TraitItemMethodInfo {
 
     /// The method lifetimes generics.  
     /// eg. `fn f<'a>(){}`.
-    pub generic_lifetimes: indexmap::IndexMap<syn::Ident, syn::LifetimeDef>,
+    pub generic_lifetimes: indexmap::IndexMap<syn::Lifetime, syn::LifetimeDef>,
     /// The method type generics.  
     /// eg. `fn f<T>(){}`.
     pub generic_types: indexmap::IndexMap<syn::Ident, syn::TypeParam>,
@@ -28,43 +28,12 @@ pub struct TraitItemMethodInfo {
     pub receiver: Option<syn::Receiver>,
 
     pub args: indexmap::IndexMap<syn::Ident, syn::PatType>,
-
-    pub args_sets: ArgsSets,
+    // pub args_sets: ArgsSets,
     //
     // /// Attributes and signature information.
     // pub attr_sig_info: AttrSigInfo,
     // /// String representation of method name, e.g. `"my_method"`.
     // pub ident_byte_str: LitStr,
-}
-
-/// Argument's requirements.
-#[derive(Clone, Default)]
-pub struct ArgsSets {
-    /// eg. `trait Trait<'a>`.
-    pub trait_generic_lifetimes: indexmap::IndexSet<syn::Ident>,
-    /// eg. `trait Trait<T>`.
-    pub trait_generic_types: indexmap::IndexSet<syn::Ident>,
-    /// eg. `trait Trait<const N: usize>`
-    pub trait_generic_consts: indexmap::IndexSet<syn::Ident>,
-    /// eg. `trait Trait<'a>: 'a`.
-    pub self_lifetime_bounds: indexmap::IndexSet<syn::Lifetime>,
-    /// eg. `trait Trait: OtherTrait`.
-    pub self_trait_bounds: indexmap::IndexSet<syn::TraitBound>,
-    /// eg. `trait Trait<'a, T> where T: 'a`.
-    pub trait_lifetime_bounds: indexmap::IndexSet<syn::Ident>,
-    /// eg. `trait Trait<T> where T: Clone`.
-    pub trait_type_bounds: indexmap::IndexSet<syn::Type>,
-    /// eg. `trait Trait {const T: u8}`.
-    pub trait_const_items: indexmap::IndexSet<syn::Ident>,
-    /// eg. `trait Trait {type T}`.
-    pub trait_assoc_type_items: indexmap::IndexSet<syn::Ident>,
-    //
-    /// eg. `fn f<'a>(){}`.
-    pub method_generic_lifetimes: indexmap::IndexSet<syn::Ident>,
-    /// eg. `fn f<T>(){}`.
-    pub method_generic_types: indexmap::IndexSet<syn::Ident>,
-    /// eg. `f f<const N: usize>(){}`
-    pub method_generic_consts: indexmap::IndexSet<syn::Ident>,
 }
 
 impl TraitItemMethodInfo {
@@ -86,12 +55,8 @@ impl TraitItemMethodInfo {
             }
         }
 
-        let generic_lifetimes: indexmap::IndexMap<syn::Ident, syn::LifetimeDef> = original
-            .sig
-            .generics
-            .lifetimes()
-            .map(|lt| (lt.lifetime.ident.clone(), lt.clone()))
-            .collect();
+        let generic_lifetimes: indexmap::IndexMap<syn::Lifetime, syn::LifetimeDef> =
+            original.sig.generics.lifetimes().map(|lt| (lt.lifetime.clone(), lt.clone())).collect();
         let generic_types: indexmap::IndexMap<syn::Ident, syn::TypeParam> =
             original.sig.generics.type_params().map(|tp| (tp.ident.clone(), tp.clone())).collect();
         let generic_consts: indexmap::IndexMap<syn::Ident, syn::ConstParam> =
@@ -227,8 +192,7 @@ impl TraitItemMethodInfo {
 
         use indexmap::IndexSet;
 
-        let mut args_sets = ArgsSets::default();
-
+        /*
         for (_ident, pat_type) in &args {
             match pat_type.ty.as_ref() {
                 // [T; n]
@@ -366,6 +330,7 @@ impl TraitItemMethodInfo {
                 }
             }
         }
+        */
 
         // let attr_sig_info = AttrSigInfo::new(attrs, sig)?;
 
@@ -380,7 +345,7 @@ impl TraitItemMethodInfo {
             generic_consts,
             receiver,
             args,
-            args_sets,
+            // args_sets,
             // attr_sig_info,
             // ident_byte_str
         })
