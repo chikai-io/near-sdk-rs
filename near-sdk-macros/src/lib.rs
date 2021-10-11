@@ -2,6 +2,7 @@
 extern crate proc_macro;
 
 mod core_impl;
+mod replace_ident;
 
 use proc_macro::TokenStream;
 

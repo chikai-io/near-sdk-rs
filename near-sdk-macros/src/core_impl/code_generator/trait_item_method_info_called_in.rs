@@ -12,7 +12,7 @@ impl TraitItemMethodInfo {
     /// Generate code that wraps the method.
     pub fn method_wrapper(&self, trait_info: &ItemTraitInfo) -> Result<TokenStream2, Error> {
         use quote::format_ident;
-        let method_mod_name = &self.original.sig.ident;
+        let method_mod_name = &self.ident;
         let method_docs = &self.docs;
 
         //
@@ -41,32 +41,55 @@ impl TraitItemMethodInfo {
         let args_method_generic_const_idents = self.generic_consts.keys().collect::<Vec<_>>();
         let args_method_generic_consts = self.generic_consts.values().collect::<Vec<_>>();
 
-        let args = self.args.values().collect::<Vec<_>>();
+        let args = &self.args;
 
-        let trait_where_clauses = trait_info
-            .original
-            .generics
-            .where_clause
-            .iter()
-            .flat_map(|w| w.predicates.iter())
-            .collect::<Vec<_>>();
-        let method_where_clauses = self
-            .original
-            .sig
-            .generics
-            .where_clause
-            .iter()
-            .flat_map(|w| w.predicates.iter())
-            .collect::<Vec<_>>();
-
-        let where_clause = if !trait_where_clauses.is_empty() || !method_where_clauses.is_empty() {
-            quote! {
-                where
-                    #(#trait_where_clauses,)*
-                    #(#method_where_clauses,)*
-            }
-        } else {
+        let self_lifetime_bounds = &trait_info.self_lifetime_bounds;
+        let self_lifetime_bounds_q = if self_lifetime_bounds.is_empty() {
             quote! {}
+        } else {
+            quote! {_State: #(#self_lifetime_bounds )+*,}
+        };
+
+        let implicit_self_trait_bound = {
+            let trait_name = &trait_info.original_ident;
+            if !args_trait_lifetime_idents.is_empty()
+                || !args_trait_generic_type_idents.is_empty()
+                || !args_trait_generic_const_idents.is_empty()
+            {
+                quote! {
+                    _State: #trait_name < //
+                      #(#args_trait_lifetime_idents,)*
+                      #(#args_trait_generic_type_idents,)*
+                      #(#args_trait_generic_const_idents,)*
+                    >,
+                }
+            } else {
+                quote! {_State: #trait_name ,}
+            }
+        };
+
+        let self_trait_bounds = &trait_info.self_trait_bounds;
+        let self_trait_bounds_q = if self_trait_bounds.is_empty() {
+            quote! {}
+        } else {
+            quote! {_State: #(#self_trait_bounds )+*,}
+        };
+
+        let trait_lifetime_where_clauses = trait_info.lifetime_bounds.values().collect::<Vec<_>>();
+        let trait_type_where_clauses = trait_info.type_bounds.values().collect::<Vec<_>>();
+
+        let method_lifetime_where_clauses = self.lifetime_bounds.values().collect::<Vec<_>>();
+        let method_type_where_clauses = self.lifetime_bounds.values().collect::<Vec<_>>();
+
+        let where_clause = quote! {
+            where
+                #self_lifetime_bounds_q
+                #self_trait_bounds_q
+                #implicit_self_trait_bound
+                #(#trait_lifetime_where_clauses,)*
+                #(#method_lifetime_where_clauses,)*
+                #(#trait_type_where_clauses,)*
+                #(#method_type_where_clauses,)*
         };
 
         /*
@@ -96,6 +119,7 @@ impl TraitItemMethodInfo {
         let args_generics_with_bounds = quote! {
             #(#args_trait_lifetimes,)*
             #(#args_method_lifetimes,)*
+            _State,
             #(#args_trait_generic_types,)*
             #(#args_method_generic_types,)*
             #(#args_trait_generic_consts,)*
@@ -105,6 +129,7 @@ impl TraitItemMethodInfo {
         let args_generics_idents = quote! {
             #(#args_trait_lifetime_idents,)*
             #(#args_method_lifetime_idents,)*
+            _State,
             #(#args_trait_generic_type_idents,)*
             #(#args_method_generic_type_idents,)*
             #(#args_trait_generic_const_idents,)*
@@ -117,6 +142,8 @@ impl TraitItemMethodInfo {
             #[doc = "generated code here"]
             pub mod #method_mod_name {
                 use #near_sdk as _near_sdk;
+                use std::marker::PhantomData;
+                use super::*;
 
                 #(#[doc = #method_docs])*
                 #[derive(_near_sdk::serde::Deserialize)]
@@ -129,7 +156,7 @@ impl TraitItemMethodInfo {
                 {
                     #(pub #args,)*
                     #[serde(skip)]
-                    pub _phantom: StatelessCalledIn< //
+                    pub _phantom: CalledIn< //
                         #args_generics_idents
                     >,
                 }
@@ -137,26 +164,9 @@ impl TraitItemMethodInfo {
                 #(#[doc = #method_docs])*
                 pub type Return<Z> = Z;
 
+                #[derive(Default)]
                 #(#[doc = #method_docs])*
                 pub struct CalledIn< //
-                    #(#args_trait_lifetimes,)*
-                    #(#args_method_lifetimes,)*
-                    _State,
-                    #(#args_trait_generic_types,)*
-                    #(#args_method_generic_types,)*
-                    #(#args_trait_generic_consts,)*
-                    #(#args_method_generic_consts,)*
-                >
-                #where_clause
-                {
-                    _state_param: std::marker::PhantomData<_State>,
-                    _stateless_params: StatelessCalledIn< //
-                        #args_generics_idents
-                    >,
-                }
-
-                #[derive(Default)]
-                pub struct StatelessCalledIn< //
                     #args_generics_with_bounds
                 >
                 #where_clause
@@ -167,6 +177,7 @@ impl TraitItemMethodInfo {
                     _method_lifetimes: ( //
                         #(std::marker::PhantomData<&#args_method_lifetime_idents ()>,)*
                     ),
+                    _state_type: PhantomData<_State>,
                     _trait_types: ( //
                         #(std::marker::PhantomData<#args_trait_generic_type_idents>,)*
                     ),
